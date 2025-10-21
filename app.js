@@ -154,7 +154,7 @@ function createPageElement(pageNumber) {
   
   // Добавляем фоновое изображение
   const backgroundImg = document.createElement('img');
-  backgroundImg.src = `/template/page-${pageNumber}.png`;
+  backgroundImg.src = `./template/page-${pageNumber}.png`;
   backgroundImg.style.cssText = `
     position: absolute;
     top: 0;
@@ -1483,7 +1483,7 @@ async function loadBundledTemplate() {
   const maxPages = 10; // только существующие страницы
   const urls = [];
   for (let i = 1; i <= maxPages; i++) {
-    urls.push(`/template/page-${i}.png`);
+    urls.push(`./template/page-${i}.png`);
   }
   // проверяем какие существуют
   const existing = [];
