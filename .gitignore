@@ -18,6 +18,7 @@ yarn-error.log*
 .idea/
 *.swp
 *.swo
+*~
 
 # Logs
 logs
@@ -31,10 +32,28 @@ pids
 
 # Coverage directory used by tools like istanbul
 coverage/
+.nyc_output
+
+# Dependency directories
+node_modules/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
 
 # Temporary folders
 tmp/
 temp/
+*.tmp
+*.temp
 
 # Environment variables
 .env
@@ -46,3 +65,33 @@ temp/
 # Build outputs
 dist/
 build/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Local development
+.local/
