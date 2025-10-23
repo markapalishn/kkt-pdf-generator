@@ -1,0 +1,985 @@
+:root {
+  --bg: #f8fafc;
+  --panel: #ffffff;
+  --muted: #64748b;
+  --text: #1e293b;
+  --brand: #2E71FC;
+  --brand-600: #1e5ce6;
+  --danger: #ef4444;
+  --ok: #10b981;
+  --border: #e2e8f0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+  color: var(--text);
+  background: var(--bg);
+}
+
+.app__header {
+  padding: 24px 24px 0;
+}
+
+.header__content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.header__text {
+  flex: 1;
+}
+
+.header__logo {
+  flex-shrink: 0;
+  margin-left: 24px;
+}
+
+.header__logo svg {
+  display: block;
+  width: 200px;
+  height: auto;
+}
+
+.app__header h1 {
+  margin: 0 0 6px;
+  font-size: 24px;
+}
+
+.app__header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.app__main {
+  display: grid;
+  grid-template-columns: minmax(340px, 520px) 1fr;
+  gap: 16px;
+  align-items: start;
+  padding: 16px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.panel--form {
+  padding: 18px;
+}
+
+form fieldset {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin: 0 0 14px;
+}
+
+form legend {
+  color: var(--muted);
+  padding: 0 6px;
+}
+
+.field {
+  margin: 10px 0 8px;
+}
+
+.grid-1 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+
+input, select, textarea {
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(46, 113, 252, 0.1);
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.actions__hint {
+  font-size: 12px;
+  color: #666;
+  margin: 8px 0 0 0;
+  font-style: italic;
+  width: 100%;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: var(--panel);
+  color: var(--text);
+  transition: all 0.2s ease;
+}
+
+.btn--primary {
+  background: linear-gradient(180deg, var(--brand), var(--brand-600));
+  border: none;
+  color: white;
+}
+
+.btn--primary:hover {
+  background: linear-gradient(180deg, var(--brand-600), var(--brand));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(46, 113, 252, 0.3);
+}
+
+.btn--primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(46, 113, 252, 0.2);
+}
+
+.btn--ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--muted);
+}
+
+.btn--ghost:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.btn--secondary {
+  background: var(--bg);
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.btn--secondary:hover {
+  background: var(--brand);
+  color: white;
+}
+
+.panel--preview { padding: 0; }
+
+.preview-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.page-navigation {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-info {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 500;
+  min-width: 120px;
+  text-align: center;
+}
+
+
+.preview { 
+  padding: 16px;
+  display: flex; 
+  flex-direction: column; 
+  gap: 18px; 
+  min-height: 400px;
+  justify-content: center;
+  align-items: center;
+}
+
+.sheet { margin: 0 auto; background: white; color: #111827; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.35); position: relative; overflow: hidden; }
+
+.a4 {
+  width: 210mm;
+  min-height: 297mm;
+}
+
+.sheet__canvas { 
+  position: relative; 
+  width: 210mm; 
+  height: 297mm; 
+  z-index: 1; 
+}
+.sheet__canvas::before { 
+  content: ''; 
+  position: absolute; 
+  top: 0; 
+  left: 0; 
+  right: 0; 
+  bottom: 0; 
+  background-image: inherit; 
+  background-size: inherit; 
+  background-position: inherit; 
+  z-index: -1; 
+  pointer-events: none;
+}
+
+.sheet--knd .sheet__canvas { background-image: var(--knd-bg-url, none); background-size: contain; background-repeat: no-repeat; background-position: top left; }
+
+.sheet--knd#sheet1 { --knd-bg-url: var(--knd-page1, none); }
+.sheet--knd#sheet2 { --knd-bg-url: var(--knd-page2, none); }
+
+.sheet__header {
+  text-align: center;
+  margin-bottom: 8mm;
+}
+
+.sheet__knd {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.sheet__section h3 {
+  margin: 0 0 4mm;
+  font-size: 14px;
+  color: #111827;
+}
+
+.sheet__section p {
+  margin: 0 0 2.5mm;
+  font-size: 12.5px;
+}
+
+.sheet__footer {
+  margin-top: 14mm;
+  font-size: 12px;
+}
+
+@media (max-width: 1100px) {
+  .app__main {
+    grid-template-columns: 1fr;
+  }
+  .panel--preview { order: 2; }
+  
+  .header__content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .header__logo {
+    margin-left: 0;
+    margin-top: 16px;
+  }
+}
+
+/* Отрисовка клеточек */
+.boxes { position: absolute; display: grid; grid-auto-flow: column; gap: 1.2mm; }
+.boxes::before { content: attr(data-debug); }
+.boxes span { display: inline-flex; width: 4.5mm; height: 6.2mm; border: 0.2mm solid rgba(0,0,0,0.6); align-items: center; justify-content: center; font-size: 10px; font-family: Inter, Arial, sans-serif; color: #111; }
+.boxes span.empty { color: transparent; }
+
+/* Текстовые оверлеи */
+.overlay-text {
+  position: absolute;
+  font: 18px 'Courier New', Courier, monospace;
+  font-weight: 700;
+  color: #000 !important;
+  white-space: pre;
+  letter-spacing: 0px;
+  z-index: 15;
+  background: rgba(255, 235, 59, 0.6) !important;
+  border: 2px solid #ffc107 !important;
+  min-width: 20px;
+  min-height: 20px;
+  pointer-events: auto !important;
+}
+.overlay-char { 
+  position: absolute; 
+  font: 18px 'Courier New', Courier, monospace !important; 
+  font-weight: 700 !important; 
+  color: #000 !important; 
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
+  z-index: 15;
+  background: rgba(255, 235, 59, 0.6) !important;
+  border: 2px solid #ffc107 !important;
+  min-width: 20px;
+  min-height: 20px;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Пустые поля в режиме редактирования - показываем выделение только для полей без данных */
+.editor-mode .overlay-text:empty,
+.editor-mode .overlay-char:empty {
+  background: rgba(255, 255, 0, 0.3);
+  border: 1px dashed #ff6b00;
+  min-width: 20px;
+  min-height: 15px;
+}
+
+/* Поля с заполненными данными - убираем выделение */
+.editor-mode .overlay-char[data-has-data="true"] {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Поля без данных (содержат только нули или пустые) - показываем выделение */
+.editor-mode .overlay-char[data-has-data="false"] {
+  background: rgba(255, 255, 0, 0.3);
+  border: 1px dashed #ff6b00;
+}
+
+/* Поле "Вид документа" - без выделения */
+.overlay-char[data-field-name="Вид документа"] {
+  background: transparent !important;
+  border: none !important;
+  z-index: 2;
+}
+
+/* Элементы без выделения */
+.overlay-char.no-highlight,
+.overlay-text.no-highlight {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Разделители страниц */
+.page-separator {
+  position: absolute;
+  background-color: #000 !important;
+  z-index: 3 !important;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.editor-mode .overlay-text:empty::after {
+  content: "ПУСТОЕ ПОЛЕ";
+  font-size: 8px;
+  color: #ff6b00;
+  position: absolute;
+  top: -12px;
+  left: 0;
+  white-space: nowrap;
+}
+
+/* Боковая панель редактора позиций */
+.position-editor {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 100vh;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+}
+
+.position-editor--sidebar {
+  transform: translateX(0);
+}
+
+/* Сдвигаем основной контент при открытии редактора */
+body.editor-mode .app__container {
+  margin-right: 320px;
+  transition: margin-right 0.3s ease-in-out;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .position-editor {
+    width: 100%;
+    transform: translateX(100%);
+  }
+  
+  body.editor-mode .app__container {
+    margin-right: 0;
+  }
+}
+
+.editor-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.editor-header h3 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.editor-controls {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.editor-content {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.position-info {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.coord-display {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.coord-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.coord-label {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.coord-value {
+  color: var(--text);
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+}
+
+/* Список полей */
+.field-list {
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.field-list h4 {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.field-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.field-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  min-height: 40px;
+  width: 100%;
+}
+
+.field-item:hover {
+  background: rgba(46, 113, 252, 0.1);
+  border-color: var(--brand);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(46, 113, 252, 0.15);
+}
+
+.field-item.selected {
+  background: rgba(46, 113, 252, 0.15);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px rgba(46, 113, 252, 0.2);
+}
+
+.field-item-name {
+  color: var(--text);
+  font-weight: 500;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.field-delete-btn {
+  background: var(--danger) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 4px !important;
+  width: 24px !important;
+  height: 24px !important;
+  font-size: 12px !important;
+  font-weight: bold !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.field-delete-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+/* Маленькие кнопки */
+.btn--small {
+  padding: 4px 8px;
+  font-size: 11px;
+  min-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* Точные контролы */
+.precise-controls {
+  margin-bottom: 16px;
+}
+
+.precise-controls h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.control-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.control-group label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.control-group input[type="number"] {
+  width: 60px;
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
+.control-group input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.btn--small {
+  height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+  min-width: 28px;
+}
+
+/* Кнопки отмены и повтора */
+#undoBtn, #redoBtn {
+  font-size: 16px;
+  font-weight: bold;
+  min-width: 36px;
+  padding: 0 8px;
+}
+
+#undoBtn:hover, #redoBtn:hover {
+  background: color-mix(in oklab, var(--brand), transparent 70%);
+  border-color: var(--brand);
+}
+
+/* Режим редактирования */
+.editor-mode .overlay-text,
+.editor-mode .overlay-char {
+  cursor: move;
+  user-select: none;
+  z-index: 15;
+  border: 2px solid #ff6b00;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+  color: #000 !important;
+  pointer-events: auto !important;
+}
+
+
+.editor-mode .overlay-text:hover,
+.editor-mode .overlay-char:hover {
+  background: color-mix(in oklab, var(--brand), transparent 80%);
+  border-color: var(--brand-600);
+}
+
+.editor-mode .overlay-text.dragging,
+.editor-mode .overlay-char.dragging {
+  z-index: 16;
+  border-color: #00ff00;
+  background: rgba(0, 255, 0, 0.9);
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.8);
+}
+
+/* Названия полей */
+.field-name-label {
+  z-index: 12 !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid #ff6b00 !important;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Индикатор страницы для полей */
+.page-indicator {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #ff6b00;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 4px;
+  border-radius: 3px;
+  z-index: 7;
+  min-width: 16px;
+  text-align: center;
+}
+
+/* Визуальная сетка */
+.visual-grid {
+  pointer-events: none !important;
+}
+
+/* Модальное окно с кодом */
+.code-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.code-modal-content {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 800px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.code-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.code-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.code-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.code-modal-close:hover {
+  background: color-mix(in oklab, var(--danger), transparent 90%);
+  color: var(--danger);
+}
+
+.code-modal-body {
+  padding: 20px;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.code-modal-body p {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.code-modal-body code {
+  background: color-mix(in oklab, var(--brand), transparent 90%);
+  color: var(--brand);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+}
+
+.code-textarea {
+  flex: 1;
+  background: #0f1530;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  resize: none;
+  min-height: 400px;
+  white-space: pre;
+  overflow: auto;
+}
+
+.code-modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+/* Уведомление об обновлении кода */
+.code-update-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10001;
+  max-width: 400px;
+}
+
+.notification-content {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(46, 113, 252, 0.1);
+  border-bottom: 1px solid var(--border);
+}
+
+.notification-header h4 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.notification-close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+}
+
+.notification-body {
+  padding: 16px;
+}
+
+.notification-body p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.notification-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.notification-actions .btn {
+  font-size: 12px;
+  padding: 6px 12px;
+  height: 32px;
+}
+
+/* Стили для радиокнопок */
+.radio-group {
+  display: flex;
+  flex-direction: row;
+  gap: 24px;
+  margin-top: 8px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text);
+  padding: 4px 0;
+}
+
+.radio-label input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--brand);
+  flex-shrink: 0;
+}
+
+.radio-text {
+  user-select: none;
+  cursor: pointer;
+  flex: 1;
+}
+
+.radio-label:hover .radio-text {
+  color: var(--brand);
+}
+
+@media print {
+  body { background: white; }
+  .app__header, .panel--form, .btn, .actions { display: none !important; }
+  .panel--preview { padding: 0; box-shadow: none; border: none; }
+  .sheet { box-shadow: none; border-radius: 0; }
+}
+
+/* Стили для экспорта PDF */
+.unified-document {
+  position: relative;
+  width: 210mm;
+  height: 297mm;
+  background: white;
+  margin: 0 auto;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.unified-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+
+
+
+
+
