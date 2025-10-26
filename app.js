@@ -1728,6 +1728,55 @@ document.addEventListener('DOMContentLoaded', () => {
   if (applicantTypeSelect) {
     applicantTypeSelect.addEventListener('change', updatePreview);
   }
+  
+  // Обработчик для поля "Заводской номер ККТ" - автоматический выбор модели
+  const kktSerialInput = document.getElementById('kktSerial');
+  const kktModelSelect = document.getElementById('kktModel');
+  
+  if (kktSerialInput && kktModelSelect) {
+    kktSerialInput.addEventListener('input', (e) => {
+      const serialNumber = e.target.value.trim();
+      
+      // Если начинается с 018018 - выбираем MicroPay
+      if (serialNumber.startsWith('018018')) {
+        if (kktModelSelect.value !== 'MicroPay-ФАС') {
+          kktModelSelect.value = 'MicroPay-ФАС';
+          updatePreview();
+        }
+      }
+      // Если начинается с 19923 - выбираем БФР
+      else if (serialNumber.startsWith('19923')) {
+        if (kktModelSelect.value !== 'БФР-112ФС') {
+          kktModelSelect.value = 'БФР-112ФС';
+          updatePreview();
+        }
+      }
+    });
+  }
+  
+  // Обработчик для поля "Заводской номер ФН" - автоматический выбор модели
+  const fiscalDriveNumberInput = document.getElementById('fiscalDriveNumber');
+  
+  if (fiscalDriveNumberInput && fnModelSelect) {
+    fiscalDriveNumberInput.addEventListener('input', (e) => {
+      const serialNumber = e.target.value.trim();
+      
+      // Если начинается с 7381 - выбираем Ин36-4
+      if (serialNumber.startsWith('7381')) {
+        if (fnModelSelect.value !== 'Ин36-4') {
+          fnModelSelect.value = 'Ин36-4';
+          updatePreview();
+        }
+      }
+      // Если начинается с 7380 - выбираем Ин15-4
+      else if (serialNumber.startsWith('7380')) {
+        if (fnModelSelect.value !== 'Ин15-4') {
+          fnModelSelect.value = 'Ин15-4';
+          updatePreview();
+        }
+      }
+    });
+  }
 
 });
 
