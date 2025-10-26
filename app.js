@@ -1135,6 +1135,15 @@ function updateOrgNameFields(orgNameValue, applicantType) {
         element.setAttribute('data-has-data', 'false');
       });
     }
+    
+    // Принудительная очистка третьей строки, если название меньше 80 символов
+    const totalLength = parts[0].length + (parts[1] || '').length;
+    if (totalLength <= 80 && parts.length <= 2) {
+      orgName3Elements.forEach((element) => {
+        element.textContent = '';
+        element.setAttribute('data-has-data', 'false');
+      });
+    }
   } else {
     // Если fullOrgNameString пуста, очищаем все поля
     orgName1Elements.forEach((element) => {
