@@ -1035,26 +1035,23 @@ function updateOrgNameFields(orgNameValue, applicantType) {
   // Разбиваем на части по 40 символов
   if (fullOrgNameString && fullOrgNameString.trim() !== '') {
     const parts = [];
-    let currentIndex = 0;
+    let processedLength = 0;
     
-    while (currentIndex < fullOrgNameString.length) {
-      let part = fullOrgNameString.slice(currentIndex, currentIndex + 40);
+    while (processedLength < fullOrgNameString.length) {
+      let part = fullOrgNameString.slice(processedLength, processedLength + 40);
       
-      // Если последний символ пробел, удаляем его и переходим к следующему символу
+      // Если последний символ пробел, удаляем его
       if (part.length === 40 && part[39] === ' ') {
         part = part.slice(0, 39);
-        // Увеличиваем индекс, чтобы пропустить пробел при следующей итерации
-        currentIndex += 40;
-      } else {
-        currentIndex += 40;
       }
       
-      // Если первый символ пробел и это не первая строка, удаляем пробел
+      // Удаляем пробел в начале, если это не первая строка
       if (parts.length > 0 && part.length > 0 && part[0] === ' ') {
         part = part.slice(1);
       }
       
       parts.push(part);
+      processedLength += 40;
     }
     
                // Заполняем первое поле
