@@ -112,10 +112,7 @@ function fillOrganizationFields(organizationData) {
     document.getElementById('orgName').value = orgName;
   }
 
-  // Заполняем адрес (если есть)
-  if (organizationData.address && organizationData.address.value && document.getElementById('address')) {
-    document.getElementById('address').value = organizationData.address.value;
-  }
+  // Не заполняем адрес из DaData
 
   // Дизейблим выпадающий список "тип заявителя"
   const applicantTypeSelect = document.getElementById('applicantType');
@@ -761,7 +758,7 @@ function updatePreview() {
 
   // === Текстовые оверлеи ===
   // Всегда вызываем renderOverlays чтобы обновить поля названия организации с префиксом
-  window.renderOverlays(overlayData);
+    window.renderOverlays(overlayData);
   
   // Обновляем отображение текущей страницы
   showPage(currentPage);
@@ -1040,7 +1037,7 @@ function updateOrgNameFields(orgNameValue, applicantType) {
   // Добавляем префиксы для разных типов организаций
   let fullOrgNameString = '';
   let prefix = '';
-  if (applicantType === 'ip') {
+    if (applicantType === 'ip') {
     prefix = 'ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ ';
   } else if (applicantType === 'ooo') {
     prefix = 'ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ ';
@@ -1082,19 +1079,19 @@ function updateOrgNameFields(orgNameValue, applicantType) {
     }
     
                // Заполняем первое поле
-               if (parts[0]) {
-                 orgName1Elements.forEach((element, index) => {
-                   if (index < parts[0].length) {
-                     element.textContent = parts[0][index];
-                     element.style.setProperty('color', '#000', 'important');
-                     element.setAttribute('data-has-data', 'true');
-                   } else {
+    if (parts[0]) {
+      orgName1Elements.forEach((element, index) => {
+        if (index < parts[0].length) {
+          element.textContent = parts[0][index];
+          element.style.setProperty('color', '#000', 'important');
+          element.setAttribute('data-has-data', 'true');
+        } else {
                      element.textContent = '0';
                      element.style.setProperty('color', '#999', 'important');
-                     element.setAttribute('data-has-data', 'false');
-                   }
-                 });
-               }
+          element.setAttribute('data-has-data', 'false');
+        }
+      });
+    }
     
     // Заполняем второе поле
     if (parts[1]) {
@@ -1144,20 +1141,20 @@ function updateOrgNameFields(orgNameValue, applicantType) {
         element.setAttribute('data-has-data', 'false');
       });
     }
-  } else {
+      } else {
     // Если fullOrgNameString пуста, очищаем все поля
     orgName1Elements.forEach((element) => {
       element.textContent = '0';
       element.style.setProperty('color', '#999', 'important');
-      element.setAttribute('data-has-data', 'false');
+        element.setAttribute('data-has-data', 'false');
     });
     orgName2Elements.forEach((element) => {
       element.textContent = '';
-      element.setAttribute('data-has-data', 'false');
+        element.setAttribute('data-has-data', 'false');
     });
     orgName3Elements.forEach((element) => {
-      element.textContent = '';
-      element.setAttribute('data-has-data', 'false');
+        element.textContent = '';
+        element.setAttribute('data-has-data', 'false');
     });
   }
 }
@@ -2134,8 +2131,8 @@ async function loadBundledTemplate() {
     applicationDateInput.value = todayString;
     logger.debug('Установлена дата заявления по умолчанию:', 'init');
   }
-  
-  // Обновляем поля даты в PDF
+    
+    // Обновляем поля даты в PDF
   if (applicationDateInput && applicationDateInput.value) {
     updateDateFields(applicationDateInput.value);
   }
