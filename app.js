@@ -1726,7 +1726,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   if (applicantTypeSelect) {
-    applicantTypeSelect.addEventListener('change', updatePreview);
+    applicantTypeSelect.addEventListener('change', (e) => {
+      const applicantType = e.target.value;
+      const kppInput = document.getElementById('kpp');
+      
+      // Для ИП - деактивируем КПП и очищаем
+      if (applicantType === 'ip') {
+        if (kppInput) {
+          kppInput.disabled = true;
+          kppInput.value = '';
+        }
+      } else {
+        if (kppInput) {
+          kppInput.disabled = false;
+        }
+      }
+      
+      updatePreview();
+    });
   }
   
   // Обработчик для поля "Заводской номер ККТ" - автоматический выбор модели
