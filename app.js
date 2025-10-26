@@ -138,6 +138,30 @@ function fillOrganizationFields(organizationData) {
     }
   }
 
+  // Заполняем ФИО заявителя и устанавливаем тип заявителя
+  const zayavitelSelect = document.getElementById('zayavitel');
+  const fioApplicantInput = document.getElementById('fioApplicant');
+  
+  if (organizationData.type === 'INDIVIDUAL') {
+    // Если ИП - заполняем ФИО из name.full
+    if (organizationData.name && organizationData.name.full && fioApplicantInput) {
+      fioApplicantInput.value = organizationData.name.full;
+    }
+    // Устанавливаем "Пользователь"
+    if (zayavitelSelect) {
+      zayavitelSelect.value = '1'; // Пользователь
+    }
+  } else {
+    // Если НЕ ИП - заполняем ФИО руководителя
+    if (organizationData.management && organizationData.management.name && fioApplicantInput) {
+      fioApplicantInput.value = organizationData.management.name;
+    }
+    // Устанавливаем "Представитель пользователя"
+    if (zayavitelSelect) {
+      zayavitelSelect.value = '2'; // Представитель пользователя
+    }
+  }
+
   // Устанавливаем флаг автозаполнения и обновляем превью
   window.isAutoFillMode = true;
   updatePreview();
