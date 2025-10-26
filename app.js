@@ -1046,6 +1046,11 @@ function updateOrgNameFields(orgNameValue, applicantType) {
         let lastNonSpace = chunk.trimEnd();
         parts.push(lastNonSpace);
         processed += lastNonSpace.length + 1; // +1 пропускает пробел
+        
+        // Пропускаем пробел в начале следующей части
+        if (processed < fullOrgNameString.length && fullOrgNameString[processed] === ' ') {
+          processed++;
+        }
       } else {
         parts.push(chunk);
         processed += 40;
