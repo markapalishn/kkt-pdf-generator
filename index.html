@@ -177,32 +177,16 @@
 
             <fieldset>
               <legend>3. Регистрация</legend>
-              <div class="field grid-2">
-                <div>
-                  <label for="operationType">Операция</label>
-                  <select id="operationType" name="operationType">
-                    <option value="registration">Регистрация</option>
-                    <option value="reregistration">Перерегистрация</option>
-                  </select>
-                </div>
-                <div>
-                  <label for="ifnsCode">Код ИФНС</label>
-                  <input id="ifnsCode" name="ifnsCode" inputmode="numeric" pattern="^\d{4}$" required placeholder="4 цифры" />
-                </div>
-              </div>
-              <div class="field grid-2">
-                <div>
-                  <label for="applicationDate">Дата заявления</label>
-                  <input id="applicationDate" name="applicationDate" type="date" required />
-                </div>
-                <div>
-                  <label for="headName">Руководитель/ИП</label>
-                  <input id="headName" name="headName" required placeholder="ФИО" />
-                </div>
+              <div class="field">
+                <label for="operationType">Операция</label>
+                <select id="operationType" name="operationType">
+                  <option value="registration">Регистрация</option>
+                  <option value="reregistration">Перерегистрация</option>
+                </select>
               </div>
               <div class="field">
-                <label for="notes">Дополнительные сведения</label>
-                <textarea id="notes" name="notes" rows="3" placeholder="Необязательно"></textarea>
+                <label for="applicationDate">Дата заявления</label>
+                <input id="applicationDate" name="applicationDate" type="date" required />
               </div>
             </fieldset>
 
