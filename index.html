@@ -53,7 +53,18 @@
             <!-- Фиксированный встроенный шаблон: страницы подгружаются автоматически из папки template/ -->
 
             <fieldset>
-              <legend>1. Сведения о заявителе</legend>
+              <legend>1. Сведения о заявлении</legend>
+              <div class="field">
+                <label for="operationType">Операция</label>
+                <select id="operationType" name="operationType">
+                  <option value="registration">Регистрация</option>
+                  <option value="reregistration">Перерегистрация</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="applicationDate">Дата заявления</label>
+                <input id="applicationDate" name="applicationDate" type="date" required />
+              </div>
               <div class="field grid-2">
                 <div>
                   <label for="inn">ИНН</label>
@@ -162,21 +173,6 @@
                     <option value="АО «Информационный центр»">АО «Информационный центр»</option>
                   </select>
                 </div>
-              </div>
-            </fieldset>
-
-            <fieldset>
-              <legend>3. Регистрация</legend>
-              <div class="field">
-                <label for="operationType">Операция</label>
-                <select id="operationType" name="operationType">
-                  <option value="registration">Регистрация</option>
-                  <option value="reregistration">Перерегистрация</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="applicationDate">Дата заявления</label>
-                <input id="applicationDate" name="applicationDate" type="date" required />
               </div>
             </fieldset>
 
