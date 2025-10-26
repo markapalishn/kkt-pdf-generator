@@ -1853,10 +1853,12 @@ function renderOverlays(data) {
   });
 
   // Название организации 3
-  const Nazvanieorganizatsii3Text = data.Nazvanieorganizatsii3 || '0000000000000000000000000000000000000000';
+  const Nazvanieorganizatsii3Text = data.Nazvanieorganizatsii3 && data.Nazvanieorganizatsii3.trim() !== '' && data.Nazvanieorganizatsii3 !== '0000000000000000000000000000000000000000' 
+    ? data.Nazvanieorganizatsii3 
+    : '';
   const hasOrgName3Data = data.Nazvanieorganizatsii3 && data.Nazvanieorganizatsii3.trim() !== '' && data.Nazvanieorganizatsii3 !== '0000000000000000000000000000000000000000';
-  window.placeChars(1, 18.254, 117.725, Nazvanieorganizatsii3Text, CELL_WIDTH_MM, CELL_GAP_MM, { 
-    color: data.Nazvanieorganizatsii3 ? '#000 !important' : '#999 !important', 
+  window.placeChars(1, 18.254, 117.725, Nazvanieorganizatsii3Text || '', CELL_WIDTH_MM, CELL_GAP_MM, { 
+    color: hasOrgName3Data ? '#000 !important' : '#999 !important', 
     fieldName: 'Название организации 3',
     hasData: hasOrgName3Data
   });
