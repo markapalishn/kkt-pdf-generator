@@ -49,6 +49,101 @@ window.setLogLevel = (level) => {
   console.log(`Уровень логирования изменен на: ${level}`);
 };
 
+// ===== DADATA API ИНТЕГРАЦИЯ =====
+const DADATA_API_KEY = '9457c3a11abb348f8c7670296265b3dd6d31098f';
+const DADATA_API_URL = 'https://suggestions.dadata.ru/suggestions/api/4_1/rs/findById/party';
+
+// Функция для получения данных организации по ИНН или ОГРН
+async function fetchOrganizationData(query) {
+  try {
+    const response = await fetch(DADATA_API_URL, {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Token ${DADATA_API_KEY}`
+      },
+      body: JSON.stringify({ query: query })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (data.suggestions && data.suggestions.length > 0) {
+      return data.suggestions[0].data;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Ошибка при запросе к DaData API:', error);
+    return null;
+  }
+}
+
+// Функция для автозаполнения полей на основе данных из DaData
+function fillOrganizationFields(organizationData) {
+  if (!organizationData) return;
+
+  // Заполняем ИНН
+  if (organizationData.inn && document.getElementById('inn')) {
+    document.getElementById('inn').value = organizationData.inn;
+  }
+
+  // Заполняем КПП (если есть, только для юрлиц)
+  if (organizationData.kpp && document.getElementById('kpp')) {
+    document.getElementById('kpp').value = organizationData.kpp;
+  } else if (document.getElementById('kpp')) {
+    // Если КПП нет, оставляем поле пустым
+    document.getElementById('kpp').value = '';
+  }
+
+  // Заполняем ОГРН
+  if (organizationData.ogrn && document.getElementById('ogrn')) {
+    document.getElementById('ogrn').value = organizationData.ogrn;
+  }
+
+  // Заполняем наименование организации - используем full_with_opf или full
+  if (organizationData.name && document.getElementById('orgName')) {
+    const orgName = organizationData.name.full_with_opf || organizationData.name.full || organizationData.name.short;
+    document.getElementById('orgName').value = orgName;
+  }
+
+  // Заполняем адрес (если есть)
+  if (organizationData.address && organizationData.address.value && document.getElementById('address')) {
+    document.getElementById('address').value = organizationData.address.value;
+  }
+
+  // Дизейблим выпадающий список "тип заявителя"
+  const applicantTypeSelect = document.getElementById('applicantType');
+  if (applicantTypeSelect) {
+    applicantTypeSelect.disabled = true;
+    
+    // Определяем тип заявителя на основе данных
+    if (organizationData.type === 'INDIVIDUAL') {
+      applicantTypeSelect.value = 'ip';
+    } else if (organizationData.type === 'LEGAL') {
+      // Определяем ООО или АО по полному наименованию
+      const fullName = organizationData.name.full_with_opf || organizationData.name.full || '';
+      if (fullName.includes('ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ') || fullName.includes('ООО')) {
+        applicantTypeSelect.value = 'ooo';
+      } else if (fullName.includes('АКЦИОНЕРНОЕ ОБЩЕСТВО') || fullName.includes('ПУБЛИЧНОЕ АКЦИОНЕРНОЕ ОБЩЕСТВО') || fullName.includes('ПАО')) {
+        applicantTypeSelect.value = 'ao';
+      } else {
+        applicantTypeSelect.value = 'other';
+      }
+    }
+  }
+
+  // Устанавливаем флаг автозаполнения и обновляем превью
+  window.isAutoFillMode = true;
+  updatePreview();
+  window.isAutoFillMode = false;
+}
+
 // ===== ФУНКЦИИ НАВИГАЦИИ ПО СТРАНИЦАМ =====
 
 function showPage(pageNumber) {
@@ -77,11 +172,12 @@ function showPage(pageNumber) {
   
   // Обновляем поля для текущей страницы
   const data = Object.fromEntries(new FormData(form));
+  const applicantType = data.applicantType || ''; // Получаем тип заявителя из формы (может быть пустым)
   const overlayData = {
     ogrn: data.ogrn || defaultValues.ogrn,
     inn: data.inn || defaultValues.inn,
     kpp: data.kpp || defaultValues.kpp,
-    orgName: data.orgName || defaultValues.orgName,
+    orgName: data.orgName || '', // Не используем defaultValues для orgName, чтобы префикс работал корректно
     address: data.address || defaultValues.address,
     phone: data.phone || defaultValues.phone,
     email: data.email || defaultValues.email,
@@ -97,6 +193,7 @@ function showPage(pageNumber) {
     notes: data.notes || '',
     fioApplicant: data.fioApplicant || '',
     zayavitel: data.zayavitel || '1',
+    applicantType: data.applicantType || '',
     docType: '1',
     pagesTotal: '10',
     copiesTotal: '10',
@@ -111,15 +208,137 @@ function showPage(pageNumber) {
     Str010: '010',
     field10stranits: '10',
     field10listah: '10',
-    Nazvanieorganizatsii1: (data.orgName || '').substring(0, 40) || '0000000000000000000000000000000000000000',
-    Nazvanieorganizatsii2: (data.orgName || '').substring(40, 80) || '0000000000000000000000000000000000000000',
-    Nazvanieorganizatsii3: (data.orgName || '').substring(80, 120) || '0000000000000000000000000000000000000000',
+    Nazvanieorganizatsii1: (() => {
+      let orgNameText = data.orgName ? data.orgName.toUpperCase() : '';
+      
+      // Не добавляем префиксы при автозаполнении
+      if (!window.isAutoFillMode) {
+        let prefix = '';
+        if (applicantType === 'ip') {
+          prefix = 'ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ ';
+        } else if (applicantType === 'ooo') {
+          prefix = 'ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ ';
+        } else if (applicantType === 'ao') {
+          prefix = 'АКЦИОНЕРНОЕ ОБЩЕСТВО ';
+        }
+        if (prefix) {
+          orgNameText = orgNameText ? prefix + orgNameText : prefix;
+        }
+      }
+      
+      return orgNameText.substring(0, 40);
+    })(),
+    Nazvanieorganizatsii2: (() => {
+      let orgNameText = data.orgName ? data.orgName.toUpperCase() : '';
+      
+      // Не добавляем префиксы при автозаполнении
+      if (!window.isAutoFillMode) {
+        let prefix = '';
+        if (applicantType === 'ip') {
+          prefix = 'ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ ';
+        } else if (applicantType === 'ooo') {
+          prefix = 'ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ ';
+        } else if (applicantType === 'ao') {
+          prefix = 'АКЦИОНЕРНОЕ ОБЩЕСТВО ';
+        }
+        if (prefix) {
+          orgNameText = orgNameText ? prefix + orgNameText : prefix;
+        }
+      }
+      
+      return orgNameText.substring(40, 80);
+    })(),
+    Nazvanieorganizatsii3: (() => {
+      let orgNameText = data.orgName ? data.orgName.toUpperCase() : '';
+      
+      // Не добавляем префиксы при автозаполнении
+      if (!window.isAutoFillMode) {
+        let prefix = '';
+        if (applicantType === 'ip') {
+          prefix = 'ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ ';
+        } else if (applicantType === 'ooo') {
+          prefix = 'ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ ';
+        } else if (applicantType === 'ao') {
+          prefix = 'АКЦИОНЕРНОЕ ОБЩЕСТВО ';
+        }
+        if (prefix) {
+          orgNameText = orgNameText ? prefix + orgNameText : prefix;
+        }
+      }
+      
+      return orgNameText.substring(80, 120);
+    })(),
     FIORukovoditelya1: (data.headName || '').substring(0, 20) || '00000000000000000000',
     FIORukovoditelya2: (data.headName || '').substring(20, 40) || '00000000000000000000',
     FIORukovoditelya3: (data.headName || '').substring(40, 60) || '00000000000000000000',
     dd1: data.applicationDate ? new Date(data.applicationDate).getDate().toString().padStart(2, '0') : '00',
     mm1: data.applicationDate ? (new Date(data.applicationDate).getMonth() + 1).toString().padStart(2, '0') : '00',
     gggg1: data.applicationDate ? new Date(data.applicationDate).getFullYear().toString() : '0000',
+    
+    // Поля DateStr2-DateStr10 в формате "дд.мм.гг"
+    DateStr2: data.applicationDate ? (() => {
+      const date = new Date(data.applicationDate);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}.${month}.${year}`;
+    })() : '00.00.00',
+    DateStr3: data.applicationDate ? (() => {
+      const date = new Date(data.applicationDate);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}.${month}.${year}`;
+    })() : '00.00.00',
+    DateStr4: data.applicationDate ? (() => {
+      const date = new Date(data.applicationDate);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}.${month}.${year}`;
+    })() : '00.00.00',
+    DateStr5: data.applicationDate ? (() => {
+      const date = new Date(data.applicationDate);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}.${month}.${year}`;
+    })() : '00.00.00',
+    DateStr6: data.applicationDate ? (() => {
+      const date = new Date(data.applicationDate);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}.${month}.${year}`;
+    })() : '00.00.00',
+    DateStr7: data.applicationDate ? (() => {
+      const date = new Date(data.applicationDate);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}.${month}.${year}`;
+    })() : '00.00.00',
+    DateStr8: data.applicationDate ? (() => {
+      const date = new Date(data.applicationDate);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}.${month}.${year}`;
+    })() : '00.00.00',
+    DateStr9: data.applicationDate ? (() => {
+      const date = new Date(data.applicationDate);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}.${month}.${year}`;
+    })() : '00.00.00',
+    DateStr10: data.applicationDate ? (() => {
+      const date = new Date(data.applicationDate);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}.${month}.${year}`;
+    })() : '00.00.00',
   };
   
   // Очищаем поля только на текущей странице
@@ -263,6 +482,9 @@ function setText(bind, value) {
   nodes.forEach(n => { n.textContent = value && String(value).trim() ? value : '—'; });
 }
 
+// Флаг автозаполнения для DaData - глобальный
+window.isAutoFillMode = false;
+
 // Значения по умолчанию для полей
 const defaultValues = {
   ogrn: '000000000000000', // 15 символов
@@ -297,6 +519,7 @@ function formatDateISOToRu(value) {
 
 function updatePreview() {
   const data = Object.fromEntries(new FormData(form));
+  const applicantType = data.applicantType || ''; // Получаем тип заявителя из формы (может быть пустым)
 
   // Преобразуем данные формы в формат, ожидаемый renderOverlays
   const overlayData = {
@@ -304,7 +527,7 @@ function updatePreview() {
     ogrn: data.ogrn || defaultValues.ogrn,
     inn: data.inn || defaultValues.inn,
     kpp: data.kpp || defaultValues.kpp,
-    orgName: data.orgName || defaultValues.orgName,
+    orgName: data.orgName || '', // Не используем defaultValues для orgName, чтобы префикс работал корректно
     address: data.address || defaultValues.address,
     phone: data.phone || defaultValues.phone,
     email: data.email || defaultValues.email,
@@ -348,9 +571,67 @@ function updatePreview() {
     field10listah: '10',
     
     // Разбивка названия организации на части
-    Nazvanieorganizatsii1: (data.orgName || '').substring(0, 40) || '0000000000000000000000000000000000000000',
-    Nazvanieorganizatsii2: (data.orgName || '').substring(40, 80) || '0000000000000000000000000000000000000000',
-    Nazvanieorganizatsii3: (data.orgName || '').substring(80, 120) || '0000000000000000000000000000000000000000',
+    // Для ИП добавляем префикс
+    Nazvanieorganizatsii1: (() => {
+      let orgNameText = data.orgName ? data.orgName.toUpperCase() : '';
+      
+      // Не добавляем префиксы при автозаполнении
+      if (!window.isAutoFillMode) {
+        let prefix = '';
+        if (applicantType === 'ip') {
+          prefix = 'ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ ';
+        } else if (applicantType === 'ooo') {
+          prefix = 'ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ ';
+        } else if (applicantType === 'ao') {
+          prefix = 'АКЦИОНЕРНОЕ ОБЩЕСТВО ';
+        }
+        if (prefix) {
+          orgNameText = orgNameText ? prefix + orgNameText : prefix;
+        }
+      }
+      
+      return orgNameText.substring(0, 40);
+    })(),
+    Nazvanieorganizatsii2: (() => {
+      let orgNameText = data.orgName ? data.orgName.toUpperCase() : '';
+      
+      // Не добавляем префиксы при автозаполнении
+      if (!window.isAutoFillMode) {
+        let prefix = '';
+        if (applicantType === 'ip') {
+          prefix = 'ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ ';
+        } else if (applicantType === 'ooo') {
+          prefix = 'ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ ';
+        } else if (applicantType === 'ao') {
+          prefix = 'АКЦИОНЕРНОЕ ОБЩЕСТВО ';
+        }
+        if (prefix) {
+          orgNameText = orgNameText ? prefix + orgNameText : prefix;
+        }
+      }
+      
+      return orgNameText.substring(40, 80);
+    })(),
+    Nazvanieorganizatsii3: (() => {
+      let orgNameText = data.orgName ? data.orgName.toUpperCase() : '';
+      
+      // Не добавляем префиксы при автозаполнении
+      if (!window.isAutoFillMode) {
+        let prefix = '';
+        if (applicantType === 'ip') {
+          prefix = 'ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ ';
+        } else if (applicantType === 'ooo') {
+          prefix = 'ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ ';
+        } else if (applicantType === 'ao') {
+          prefix = 'АКЦИОНЕРНОЕ ОБЩЕСТВО ';
+        }
+        if (prefix) {
+          orgNameText = orgNameText ? prefix + orgNameText : prefix;
+        }
+      }
+      
+      return orgNameText.substring(80, 120);
+    })(),
     
     // Разбивка ФИО руководителя на части
     FIORukovoditelya1: (data.headName || '').substring(0, 20) || '00000000000000000000',
@@ -362,7 +643,70 @@ function updatePreview() {
     mm1: data.applicationDate ? (new Date(data.applicationDate).getMonth() + 1).toString().padStart(2, '0') : '00',
     gggg1: data.applicationDate ? new Date(data.applicationDate).getFullYear().toString() : '0000',
     
-    // Поля DataStr2-DataStr10 удалены - они находились за пределами видимых страниц
+    // Поля DateStr2-DateStr10 в формате "дд.мм.гг"
+    DateStr2: data.applicationDate ? (() => {
+      const date = new Date(data.applicationDate);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}.${month}.${year}`;
+    })() : '00.00.00',
+    DateStr3: data.applicationDate ? (() => {
+      const date = new Date(data.applicationDate);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}.${month}.${year}`;
+    })() : '00.00.00',
+    DateStr4: data.applicationDate ? (() => {
+      const date = new Date(data.applicationDate);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}.${month}.${year}`;
+    })() : '00.00.00',
+    DateStr5: data.applicationDate ? (() => {
+      const date = new Date(data.applicationDate);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}.${month}.${year}`;
+    })() : '00.00.00',
+    DateStr6: data.applicationDate ? (() => {
+      const date = new Date(data.applicationDate);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}.${month}.${year}`;
+    })() : '00.00.00',
+    DateStr7: data.applicationDate ? (() => {
+      const date = new Date(data.applicationDate);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}.${month}.${year}`;
+    })() : '00.00.00',
+    DateStr8: data.applicationDate ? (() => {
+      const date = new Date(data.applicationDate);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}.${month}.${year}`;
+    })() : '00.00.00',
+    DateStr9: data.applicationDate ? (() => {
+      const date = new Date(data.applicationDate);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}.${month}.${year}`;
+    })() : '00.00.00',
+    DateStr10: data.applicationDate ? (() => {
+      const date = new Date(data.applicationDate);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}.${month}.${year}`;
+    })() : '00.00.00',
   };
 
   setText('applicantTypeLabel', selectLabels.applicantType[data.applicantType] || '—');
@@ -392,24 +736,8 @@ function updatePreview() {
   setText('fioApplicant', data.fioApplicant);
 
   // === Текстовые оверлеи ===
-  // Проверяем, нужно ли перерисовывать все поля или только обновить существующие
-  const hasExistingFields = Object.values(pageElements).some(pageElement => {
-    const canvas = pageElement.querySelector('.sheet__canvas');
-    return canvas && canvas.querySelectorAll('.overlay-char').length > 0;
-  });
-  
-  if (!hasExistingFields) {
-    // Если полей еще нет, создаем их все
-    logger.debug('Создаем все поля с данными:', 'fields');
-    window.renderOverlays(overlayData);
-  } else {
-    // Если поля уже существуют, только обновляем их значения
-    logger.debug('Поля уже существуют, обновляем только значения', 'fields');
-    updateInnField(data.inn);
-    updateKppField(data.kpp);
-    updateOgrnField(data.ogrn);
-    updateOrgNameFields(data.orgName, data.applicantType);
-  }
+  // Всегда вызываем renderOverlays чтобы обновить поля названия организации с префиксом
+  window.renderOverlays(overlayData);
   
   // Обновляем отображение текущей страницы
   showPage(currentPage);
@@ -424,14 +752,6 @@ function updatePreview() {
   updateZayavitelField(data.zayavitel);
   updateFioApplicantFields(data.fioApplicant);
   updateDateFields(data.applicationDate);
-  
-  // Обновляем поля названий организации в зависимости от значения в панели управления
-  updateOrgNameFields(data.orgName, data.applicantType);
-  
-  // Восстанавливаем позиции после перерисовки (только если поля были пересозданы)
-  if (!hasExistingFields) {
-    restorePositions();
-  }
   
   // Обновляем поле "Дата заявления" в панели управления на основе полей в PDF
   // Используем setTimeout чтобы избежать циклических обновлений
@@ -488,7 +808,7 @@ function updateDocTypeField(operationType) {
   const docTypeValue = operationType === 'reregistration' ? '2' : '1';
   
   // Находим все элементы поля "Вид документа" в превью
-  const canvas = preview.querySelector('.unified-canvas');
+  const canvas = preview.querySelector('.sheet__canvas');
   if (!canvas) return;
   
   const docTypeElements = canvas.querySelectorAll('.overlay-char[data-field-name="Вид документа"]');
@@ -520,7 +840,7 @@ function updateInnField(innValue) {
   logger.debug('Обновление поля ИНН:', 'fields');
   
   // Ограничиваем ИНН до 12 символов
-  const limitedInnValue = (innValue || '').substring(0, 12).padEnd(12, '0');
+  const limitedInnValue = (innValue || '').substring(0, 12);
   
   // Обновляем поля на всех страницах
   Object.values(pageElements).forEach(pageElement => {
@@ -575,7 +895,7 @@ function updateKppField(kppValue) {
   logger.debug('Обновление поля КПП:', 'fields');
   
   // Ограничиваем КПП до 9 символов
-  const limitedKppValue = (kppValue || '').substring(0, 9).padEnd(9, '0');
+  const limitedKppValue = (kppValue || '').substring(0, 9);
   
   // Обновляем поля на всех страницах
   Object.values(pageElements).forEach(pageElement => {
@@ -630,7 +950,7 @@ function updateOgrnField(ogrnValue) {
   logger.debug('Обновление поля ОГРН:', 'fields');
   
   // Ограничиваем ОГРН до 15 символов
-  const limitedOgrnValue = (ogrnValue || '').substring(0, 15).padEnd(15, '0');
+  const limitedOgrnValue = (ogrnValue || '').substring(0, 15);
   
   // Обновляем поля на всех страницах
   Object.values(pageElements).forEach(pageElement => {
@@ -682,7 +1002,7 @@ function updateOgrnField(ogrnValue) {
 
 // Обновление полей названий организации в превью
 function updateOrgNameFields(orgNameValue, applicantType) {
-  const canvas = preview.querySelector('.unified-canvas');
+  const canvas = preview.querySelector('.sheet__canvas');
   if (!canvas) {
     logger.warn('Canvas не найден для обновления названий организации', 'canvas');
     return;
@@ -693,41 +1013,53 @@ function updateOrgNameFields(orgNameValue, applicantType) {
   const orgName2Elements = canvas.querySelectorAll('.overlay-char[data-field-name="Название организации 2"]');
   const orgName3Elements = canvas.querySelectorAll('.overlay-char[data-field-name="Название организации 3"]');
   
-  // Заполняем поля названий организации
-  if (orgNameValue && orgNameValue.trim() !== '') {
-    let orgNameString = orgNameValue.toString().toUpperCase();
-    
-    // Добавляем префикс для ИП
-    if (applicantType === 'ip') {
-      orgNameString = 'ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ ' + orgNameString;
-    }
-    
-    // Разбиваем текст на части по 40 символов
+  // Добавляем префиксы для разных типов организаций
+  let fullOrgNameString = '';
+  let prefix = '';
+  if (applicantType === 'ip') {
+    prefix = 'ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ ';
+  } else if (applicantType === 'ooo') {
+    prefix = 'ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ ';
+  } else if (applicantType === 'ao') {
+    prefix = 'АКЦИОНЕРНОЕ ОБЩЕСТВО ';
+  }
+  
+  if (prefix) {
+    fullOrgNameString = orgNameValue && orgNameValue.trim() !== '' 
+      ? prefix + orgNameValue.toString().toUpperCase() 
+      : prefix;
+  } else {
+    fullOrgNameString = orgNameValue ? orgNameValue.toString().toUpperCase() : '';
+  }
+  
+  // Разбиваем на части по 40 символов
+  if (fullOrgNameString && fullOrgNameString.trim() !== '') {
     const parts = [];
-    for (let i = 0; i < orgNameString.length; i += 40) {
-      parts.push(orgNameString.slice(i, i + 40));
+    for (let i = 0; i < fullOrgNameString.length; i += 40) {
+      let part = fullOrgNameString.slice(i, i + 40);
+      // Если последний символ пробел, удаляем его
+      if (part.length === 40 && part[39] === ' ') {
+        part = part.slice(0, 39);
+      }
+      parts.push(part);
     }
     
-    // Заполняем первое поле (максимум 40 символов)
-    if (parts[0]) {
-      orgName1Elements.forEach((element, index) => {
-        if (index < parts[0].length) {
-          element.textContent = parts[0][index];
-          element.style.setProperty('color', '#000', 'important');
-          element.setAttribute('data-has-data', 'true');
-        } else {
-          element.textContent = '';
-          element.setAttribute('data-has-data', 'false');
-        }
-      });
-    } else {
-      orgName1Elements.forEach(element => {
-        element.textContent = '';
-        element.setAttribute('data-has-data', 'false');
-      });
-    }
+               // Заполняем первое поле
+               if (parts[0]) {
+                 orgName1Elements.forEach((element, index) => {
+                   if (index < parts[0].length) {
+                     element.textContent = parts[0][index];
+                     element.style.setProperty('color', '#000', 'important');
+                     element.setAttribute('data-has-data', 'true');
+                   } else {
+                     element.textContent = '0';
+                     element.style.setProperty('color', '#999', 'important');
+                     element.setAttribute('data-has-data', 'false');
+                   }
+                 });
+               }
     
-    // Заполняем второе поле (максимум 40 символов)
+    // Заполняем второе поле
     if (parts[1]) {
       orgName2Elements.forEach((element, index) => {
         if (index < parts[1].length) {
@@ -740,13 +1072,14 @@ function updateOrgNameFields(orgNameValue, applicantType) {
         }
       });
     } else {
-      orgName2Elements.forEach(element => {
+      // Очищаем второе поле если его нет
+      orgName2Elements.forEach((element) => {
         element.textContent = '';
         element.setAttribute('data-has-data', 'false');
       });
     }
     
-    // Заполняем третье поле (максимум 40 символов)
+    // Заполняем третье поле
     if (parts[2]) {
       orgName3Elements.forEach((element, index) => {
         if (index < parts[2].length) {
@@ -759,58 +1092,26 @@ function updateOrgNameFields(orgNameValue, applicantType) {
         }
       });
     } else {
-      orgName3Elements.forEach(element => {
+      // Очищаем третье поле если его нет
+      orgName3Elements.forEach((element) => {
         element.textContent = '';
         element.setAttribute('data-has-data', 'false');
       });
     }
   } else {
-    // Если данных нет, показываем предзаполненные значения по умолчанию
-    const defaultOrgNameString = '0000000000000000000000000000000000000000';
-    
-    // Заполняем первое поле предзаполненными значениями
-    orgName1Elements.forEach((element, index) => {
-      if (index < defaultOrgNameString.length) {
-        const char = defaultOrgNameString[index];
-        element.textContent = char;
-        element.style.setProperty('color', '#999', 'important'); // Серый цвет для предзаполненных значений
-        element.style.setProperty('font-size', '18px', 'important');
-        element.style.setProperty('font-weight', '700', 'important');
-        element.setAttribute('data-has-data', 'false');
-      } else {
-        element.textContent = '';
-        element.setAttribute('data-has-data', 'false');
-      }
+    // Если fullOrgNameString пуста, очищаем все поля
+    orgName1Elements.forEach((element) => {
+      element.textContent = '0';
+      element.style.setProperty('color', '#999', 'important');
+      element.setAttribute('data-has-data', 'false');
     });
-    
-    // Заполняем второе поле предзаполненными значениями
-    orgName2Elements.forEach((element, index) => {
-      if (index < defaultOrgNameString.length) {
-        const char = defaultOrgNameString[index];
-        element.textContent = char;
-        element.style.setProperty('color', '#999', 'important'); // Серый цвет для предзаполненных значений
-        element.style.setProperty('font-size', '18px', 'important');
-        element.style.setProperty('font-weight', '700', 'important');
-        element.setAttribute('data-has-data', 'false');
-      } else {
-        element.textContent = '';
-        element.setAttribute('data-has-data', 'false');
-      }
+    orgName2Elements.forEach((element) => {
+      element.textContent = '';
+      element.setAttribute('data-has-data', 'false');
     });
-    
-    // Заполняем третье поле предзаполненными значениями
-    orgName3Elements.forEach((element, index) => {
-      if (index < defaultOrgNameString.length) {
-        const char = defaultOrgNameString[index];
-        element.textContent = char;
-        element.style.setProperty('color', '#999', 'important'); // Серый цвет для предзаполненных значений
-        element.style.setProperty('font-size', '18px', 'important');
-        element.style.setProperty('font-weight', '700', 'important');
-        element.setAttribute('data-has-data', 'false');
-      } else {
-        element.textContent = '';
-        element.setAttribute('data-has-data', 'false');
-      }
+    orgName3Elements.forEach((element) => {
+      element.textContent = '';
+      element.setAttribute('data-has-data', 'false');
     });
   }
 }
@@ -818,7 +1119,7 @@ function updateOrgNameFields(orgNameValue, applicantType) {
 // Обновление поля "Заявитель"
 function updateZayavitelField(zayavitelValue) {
   logger.debug('Обновление поля Заявитель:', 'fields');
-  const canvas = preview.querySelector('.unified-canvas');
+  const canvas = preview.querySelector('.sheet__canvas');
   if (!canvas) {
     logger.warn('Canvas не найден для обновления Заявитель', 'canvas');
     return;
@@ -850,7 +1151,7 @@ function updateZayavitelField(zayavitelValue) {
 // Обновление полей ФИО заявителя
 function updateFioApplicantFields(fioApplicantValue) {
   logger.debug('Обновление полей ФИО заявителя:', 'fields');
-  const canvas = preview.querySelector('.unified-canvas');
+  const canvas = preview.querySelector('.sheet__canvas');
   if (!canvas) {
     logger.warn('Canvas не найден для обновления ФИО заявителя', 'canvas');
     return;
@@ -978,7 +1279,7 @@ function updateFioApplicantFields(fioApplicantValue) {
 function updateDateFields(applicationDateValue) {
   logger.debug('=== ОБНОВЛЕНИЕ ПОЛЕЙ ДАТЫ ЗАЯВЛЕНИЯ ===', 'fields');
   logger.debug('Входное значение:', 'fields');
-  const canvas = preview.querySelector('.unified-canvas');
+  const canvas = preview.querySelector('.sheet__canvas');
   if (!canvas) {
     logger.warn('Canvas не найден для обновления даты', 'canvas');
     return;
@@ -1047,24 +1348,82 @@ function updateDateFields(applicationDateValue) {
           }
         });
         
-        // Поля DataStr2-DataStr10 удалены - они находились за пределами видимых страниц
+        // Заполняем поля DateStr2-DateStr10 в формате "дд.мм.гг"
+        const dateStr = `${day}.${month}.${year.slice(-2)}`;
+        
+        // Получаем canvas для каждой страницы
+        for (let page = 2; page <= 10; page++) {
+          const pageCanvas = window.pageElements[page]?.querySelector('.sheet__canvas');
+          if (pageCanvas) {
+            const fieldName = `DateStr${page}`;
+            const dateStrElements = pageCanvas.querySelectorAll(`.overlay-char[data-field-name="${fieldName}"]`);
+            
+            // Заполняем поле
+            dateStrElements.forEach((element, index) => {
+              if (index < dateStr.length) {
+                element.textContent = dateStr[index];
+                element.style.setProperty('color', '#000', 'important');
+                element.setAttribute('data-has-data', 'true');
+              } else {
+                element.textContent = '';
+                element.setAttribute('data-has-data', 'false');
+              }
+            });
+          }
+        }
         
       } else {
         logger.warn('Неверный формат даты:', 'validation');
         // Если дата неверная, заполняем предзаполненными значениями
         fillDateFieldsWithDefaults(dd1Elements, mm1Elements, gggg1Elements);
-        // Поля DataStr2-DataStr10 удалены - они находились за пределами видимых страниц
+        
+        // Очищаем поля DateStr2-DateStr10
+        for (let page = 2; page <= 10; page++) {
+          const pageCanvas = window.pageElements[page]?.querySelector('.sheet__canvas');
+          if (pageCanvas) {
+            const fieldName = `DateStr${page}`;
+            const dateStrElements = pageCanvas.querySelectorAll(`.overlay-char[data-field-name="${fieldName}"]`);
+            dateStrElements.forEach((element) => {
+              element.textContent = '';
+              element.setAttribute('data-has-data', 'false');
+            });
+          }
+        }
       }
     } catch (error) {
       logger.error('Ошибка парсинга даты:', 'error');
       // Если ошибка парсинга, заполняем предзаполненными значениями
       fillDateFieldsWithDefaults(dd1Elements, mm1Elements, gggg1Elements);
-      // Поля DataStr2-DataStr10 удалены - они находились за пределами видимых страниц
+      
+      // Очищаем поля DateStr2-DateStr10
+      for (let page = 2; page <= 10; page++) {
+        const pageCanvas = window.pageElements[page]?.querySelector('.sheet__canvas');
+        if (pageCanvas) {
+          const fieldName = `DateStr${page}`;
+          const dateStrElements = pageCanvas.querySelectorAll(`.overlay-char[data-field-name="${fieldName}"]`);
+          dateStrElements.forEach((element) => {
+            element.textContent = '';
+            element.setAttribute('data-has-data', 'false');
+          });
+        }
+      }
     }
   } else {
     // Если поле пустое, заполняем предзаполненными значениями
     fillDateFieldsWithDefaults(dd1Elements, mm1Elements, gggg1Elements);
-    // Поля DataStr2-DataStr10 удалены - они находились за пределами видимых страниц
+    
+    // Очищаем поля DateStr2-DateStr10
+    for (let page = 2; page <= 10; page++) {
+      const pageCanvas = window.pageElements[page]?.querySelector('.sheet__canvas');
+      if (pageCanvas) {
+        const fieldName = `DateStr${page}`;
+        const dateStrElements = pageCanvas.querySelectorAll(`.overlay-char[data-field-name="${fieldName}"]`);
+        dateStrElements.forEach((element) => {
+          element.textContent = '';
+          element.setAttribute('data-has-data', 'false');
+        });
+      }
+    }
   }
 }
 
@@ -1124,7 +1483,7 @@ function fillDateFieldsWithDefaults(dd1Elements, mm1Elements, gggg1Elements) {
 // Обновление поля "Дата заявления" в панели управления на основе полей в PDF
 function updateApplicationDateFromPDF() {
   logger.debug('=== ОБНОВЛЕНИЕ ПОЛЯ "ДАТА ЗАЯВЛЕНИЯ" ИЗ PDF ===', 'fields');
-  const canvas = preview.querySelector('.unified-canvas');
+  const canvas = preview.querySelector('.sheet__canvas');
   if (!canvas) {
     logger.warn('Canvas не найден для обновления даты заявления', 'canvas');
     return;
@@ -1191,7 +1550,7 @@ function updateApplicationDateFromPDF() {
 // Восстановление позиций после перерисовки
 function restorePositions() {
   if (Object.keys(originalPositions).length > 0) {
-    const canvas = preview.querySelector('.unified-canvas');
+    const canvas = preview.querySelector('.sheet__canvas');
     if (canvas) {
       const elements = canvas.querySelectorAll('.overlay-text, .overlay-char');
       elements.forEach((element, index) => {
@@ -1230,6 +1589,103 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // Обработчик для поля "Наименование (ФИО для ИП)" - преобразование в верхний регистр
+  const orgNameInput = document.getElementById('orgName');
+  if (orgNameInput) {
+    orgNameInput.addEventListener('input', (e) => {
+      // Сохраняем позицию курсора
+      const cursorPosition = e.target.selectionStart;
+      
+      // Преобразуем текст в верхний регистр
+      const upperCaseValue = e.target.value.toUpperCase();
+      
+      // Обновляем значение поля
+      e.target.value = upperCaseValue;
+      
+      // Восстанавливаем позицию курсора
+      e.target.setSelectionRange(cursorPosition, cursorPosition);
+      
+      // Обновляем превью
+      updatePreview();
+    });
+  }
+
+  // Обработчики автозаполнения через DaData API
+  const innInput = document.getElementById('inn');
+  const ogrnInput = document.getElementById('ogrn');
+  
+  // Флаг автозаполнения - чтобы не добавлять префиксы при автозаполнении
+  let isAutoFillMode = false;
+  
+  // Обработчик для поля ИНН
+  if (innInput) {
+    let innTimeout;
+    innInput.addEventListener('input', (e) => {
+      clearTimeout(innTimeout);
+      
+      // Ждем 1 секунду после остановки ввода перед запросом
+      innTimeout = setTimeout(async () => {
+        const innValue = e.target.value.trim();
+        
+        // Проверяем, что введено не менее 10 символов (минимальный ИНН)
+        if (innValue.length >= 10 && innValue.length <= 12) {
+          console.log('Запрос данных по ИНН:', innValue);
+          const orgData = await fetchOrganizationData(innValue);
+          if (orgData) {
+            isAutoFillMode = true; // Устанавливаем флаг автозаполнения
+            fillOrganizationFields(orgData);
+            isAutoFillMode = false; // Сбрасываем флаг после заполнения
+          }
+        }
+      }, 1000);
+    });
+  }
+  
+  // Обработчик для поля ОГРН
+  if (ogrnInput) {
+    let ogrnTimeout;
+    ogrnInput.addEventListener('input', (e) => {
+      clearTimeout(ogrnTimeout);
+      
+      // Ждем 1 секунду после остановки ввода перед запросом
+      ogrnTimeout = setTimeout(async () => {
+        const ogrnValue = e.target.value.trim();
+        
+        // Проверяем, что введено не менее 13 символов (минимальный ОГРН)
+        if (ogrnValue.length >= 13 && ogrnValue.length <= 15) {
+          console.log('Запрос данных по ОГРН:', ogrnValue);
+          const orgData = await fetchOrganizationData(ogrnValue);
+          if (orgData) {
+            isAutoFillMode = true; // Устанавливаем флаг автозаполнения
+            fillOrganizationFields(orgData);
+            isAutoFillMode = false; // Сбрасываем флаг после заполнения
+          }
+        }
+      }, 1000);
+    });
+  }
+  
+  // Делаем флаг глобальным
+  window.isAutoFillMode = isAutoFillMode;
+
+  // Обработчики для полей operationType, zayavitel и applicantType
+  const operationTypeSelect = document.getElementById('operationType');
+  const zayavitelSelect = document.getElementById('zayavitel');
+  const applicantTypeSelect = document.getElementById('applicantType');
+  
+  if (operationTypeSelect) {
+    operationTypeSelect.addEventListener('change', updatePreview);
+  }
+  
+  if (zayavitelSelect) {
+    zayavitelSelect.addEventListener('change', updatePreview);
+  }
+  
+  if (applicantTypeSelect) {
+    applicantTypeSelect.addEventListener('change', updatePreview);
+  }
+
 });
 
 
@@ -1359,41 +1815,77 @@ function renderOverlays(data) {
     hasData: hasOrgName3Data
   });
   
-  // Стр 002 - страница 1
+  // Стр 002 - страница 2
   const Str002Text = data.Str002 || '002';
-  window.placeChars(1, 126.191, 334.92, Str002Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.Str002 ? '#000' : '#999', fieldName: 'Стр 002', noHighlight: true });
+  window.placeChars(2, 126.3, 38.1, Str002Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.Str002 ? '#000' : '#999', fieldName: 'Стр 002', noHighlight: true });
 
-  // Стр003 - страница 2 (631.746 - 297 = 334.746)
+  // Стр003 - страница 3
   const Str003Text = data.Str003 || '003';
-  window.placeChars(2, 126.19, 334.746, Str003Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.Str003 ? '#000' : '#999', fieldName: 'Стр003', noHighlight: true });
+  window.placeChars(3, 126.3, 38.1, Str003Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.Str003 ? '#000' : '#999', fieldName: 'Стр003', noHighlight: true });
   
-  // Str004 - страница 3 (928.75 - 594 = 334.75)
+  // DateStr2 - на странице 2
+  const DateStr2Text = data.DateStr2 || '00.00.00';
+  window.placeChars(2, 152.3, 247.3, DateStr2Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.DateStr2 ? '#000' : '#999', fieldName: 'DateStr2' });
+  
+  // Str004 - страница 4
   const Str004Text = data.Str004 || '004';
-  window.placeChars(3, 126.19, 334.75, Str004Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.Str004 ? '#000' : '#999', fieldName: 'Str004', noHighlight: true });
+  window.placeChars(4, 126.3, 38.1, Str004Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.Str004 ? '#000' : '#999', fieldName: 'Str004', noHighlight: true });
 
-  // Str005 - страница 4 (1225.75 - 891 = 334.75)
+  // DateStr3 - на странице 3
+  const DateStr3Text = data.DateStr3 || '00.00.00';
+  window.placeChars(3, 152.3, 247.3, DateStr3Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.DateStr3 ? '#000' : '#999', fieldName: 'DateStr3' });
+
+  // Str005 - страница 5
   const Str005Text = data.Str005 || '005';
-  window.placeChars(4, 126.19, 334.75, Str005Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.Str005 ? '#000' : '#999', fieldName: 'Str005', noHighlight: true });
+  window.placeChars(5, 126.3, 38.1, Str005Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.Str005 ? '#000' : '#999', fieldName: 'Str005', noHighlight: true });
 
-  // Str006 - страница 5 (1522.75 - 1188 = 334.75)
+  // DateStr4 - на странице 4
+  const DateStr4Text = data.DateStr4 || '00.00.00';
+  window.placeChars(4, 152.3, 247.3, DateStr4Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.DateStr4 ? '#000' : '#999', fieldName: 'DateStr4' });
+
+  // Str006 - страница 6
   const Str006Text = data.Str006 || '006';
-  window.placeChars(5, 126.19, 334.75, Str006Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.Str006 ? '#000' : '#999', fieldName: 'Str006', noHighlight: true });
+  window.placeChars(6, 126.3, 38.1, Str006Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.Str006 ? '#000' : '#999', fieldName: 'Str006', noHighlight: true });
 
-  // Str007 - страница 6 (1819.75 - 1485 = 334.75)
+  // DateStr5 - на странице 5
+  const DateStr5Text = data.DateStr5 || '00.00.00';
+  window.placeChars(5, 152.7, 258.4, DateStr5Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.DateStr5 ? '#000' : '#999', fieldName: 'DateStr5' });
+
+  // Str007 - страница 7
   const Str007Text = data.Str007 || '007';
-  window.placeChars(6, 126.19, 334.75, Str007Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.Str007 ? '#000' : '#999', fieldName: 'Str007', noHighlight: true });
+  window.placeChars(7, 126.3, 38.1, Str007Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.Str007 ? '#000' : '#999', fieldName: 'Str007', noHighlight: true });
 
-  // Str008 - страница 7 (2116.75 - 1782 = 334.75)
+  // DateStr6 - на странице 6
+  const DateStr6Text = data.DateStr6 || '00.00.00';
+  window.placeChars(6, 152.4, 250.7, DateStr6Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.DateStr6 ? '#000' : '#999', fieldName: 'DateStr6' });
+
+  // Str008 - страница 8
   const Str008Text = data.Str008 || '008';
-  window.placeChars(7, 126.19, 334.75, Str008Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.Str008 ? '#000' : '#999', fieldName: 'Str008', noHighlight: true });
+  window.placeChars(8, 126.3, 38.1, Str008Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.Str008 ? '#000' : '#999', fieldName: 'Str008', noHighlight: true });
 
-  // Str009 - страница 8 (2413.75 - 2079 = 334.75)
+  // DateStr7 - на странице 7
+  const DateStr7Text = data.DateStr7 || '00.00.00';
+  window.placeChars(7, 152.1, 254.2, DateStr7Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.DateStr7 ? '#000' : '#999', fieldName: 'DateStr7' });
+
+  // Str009 - страница 9
   const Str009Text = data.Str009 || '009';
-  window.placeChars(8, 126.19, 334.75, Str009Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.Str009 ? '#000' : '#999', fieldName: 'Str009', noHighlight: true });
+  window.placeChars(9, 126.3, 38.1, Str009Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.Str009 ? '#000' : '#999', fieldName: 'Str009', noHighlight: true });
 
-  // Str010 - страница 9 (2710.75 - 2376 = 334.75)
+  // DateStr8 - на странице 8
+  const DateStr8Text = data.DateStr8 || '00.00.00';
+  window.placeChars(8, 152.3, 258.4, DateStr8Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.DateStr8 ? '#000' : '#999', fieldName: 'DateStr8' });
+
+  // Str010 - страница 10
   const Str010Text = data.Str010 || '010';
-  window.placeChars(9, 126.19, 334.75, Str010Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.Str010 ? '#000' : '#999', fieldName: 'Str010', noHighlight: true });
+  window.placeChars(10, 126.3, 38.1, Str010Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.Str010 ? '#000' : '#999', fieldName: 'Str010', noHighlight: true });
+
+  // DateStr9 - на странице 9
+  const DateStr9Text = data.DateStr9 || '00.00.00';
+  window.placeChars(9, 152.3, 251.0, DateStr9Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.DateStr9 ? '#000' : '#999', fieldName: 'DateStr9' });
+
+  // DateStr10 - на странице 10
+  const DateStr10Text = data.DateStr10 || '00.00.00';
+  window.placeChars(10, 152.5, 244.7, DateStr10Text, CELL_WIDTH_MM, CELL_GAP_MM, { color: data.DateStr10 ? '#000' : '#999', fieldName: 'DateStr10' });
 
   // 10 страниц
   const field10stranitsText = data.field10stranits || '10';
@@ -1525,6 +2017,15 @@ async function loadBundledTemplate() {
   
   // Оверлеи поверх шаблона
   // Используем значения по умолчанию для первой загрузки
+  
+  // Получаем сегодняшнюю дату для заполнения полей даты
+  const today = new Date();
+  const todayString = today.toISOString().split('T')[0]; // Формат YYYY-MM-DD
+  const day = today.getDate().toString().padStart(2, '0');
+  const month = (today.getMonth() + 1).toString().padStart(2, '0');
+  const year = today.getFullYear().toString().slice(-2);
+  const dateStr = `${day}.${month}.${year}`;
+  
   const defaultData = {
     ogrn: defaultValues.ogrn,
     inn: defaultValues.inn,
@@ -1542,6 +2043,7 @@ async function loadBundledTemplate() {
     headName: defaultValues.headName,
     applicationDate: defaultValues.applicationDate,
     operationType: 'registration',
+    applicantType: '',
     zayavitel: '1',
     docType: '1',
     pagesTotal: '10',
@@ -1557,29 +2059,41 @@ async function loadBundledTemplate() {
     Str010: '010',
     field10stranits: '10',
     field10listah: '10',
-    Nazvanieorganizatsii1: '0000000000000000000000000000000000000000',
-    Nazvanieorganizatsii2: '0000000000000000000000000000000000000000',
-    Nazvanieorganizatsii3: '0000000000000000000000000000000000000000',
+    Nazvanieorganizatsii1: (defaultValues.orgName || '').substring(0, 40) || '0000000000000000000000000000000000000000',
+    Nazvanieorganizatsii2: (defaultValues.orgName || '').substring(40, 80) || '0000000000000000000000000000000000000000',
+    Nazvanieorganizatsii3: (defaultValues.orgName || '').substring(80, 120) || '0000000000000000000000000000000000000000',
     FIORukovoditelya1: '00000000000000000000',
     FIORukovoditelya2: '00000000000000000000',
     FIORukovoditelya3: '00000000000000000000',
-    dd1: '00',
-    mm1: '00',
-    gggg1: '0000',
+    dd1: day,
+    mm1: month,
+    gggg1: today.getFullYear().toString(),
+    DateStr2: dateStr,
+    DateStr3: dateStr,
+    DateStr4: dateStr,
+    DateStr5: dateStr,
+    DateStr6: dateStr,
+    DateStr7: dateStr,
+    DateStr8: dateStr,
+    DateStr9: dateStr,
+    DateStr10: dateStr,
   };
   renderOverlays(defaultData);
   
   // Устанавливаем сегодняшнюю дату по умолчанию для поля "Дата заявления"
-  const today = new Date();
-  const todayString = today.toISOString().split('T')[0]; // Формат YYYY-MM-DD
   const applicationDateInput = document.getElementById('applicationDate');
   if (applicationDateInput && !applicationDateInput.value) {
     applicationDateInput.value = todayString;
     logger.debug('Установлена дата заявления по умолчанию:', 'init');
-    
-    // Обновляем поля даты в PDF
-    updateDateFields(todayString);
   }
+  
+  // Обновляем поля даты в PDF
+  if (applicationDateInput && applicationDateInput.value) {
+    updateDateFields(applicationDateInput.value);
+  }
+  
+  // Обновляем превью после загрузки шаблона
+  updatePreview();
   
   // Инициализируем обработчики навигации по страницам
   const prevPageBtn = document.getElementById('prevPage');
@@ -1591,6 +2105,7 @@ async function loadBundledTemplate() {
   if (nextPageBtn) {
     nextPageBtn.addEventListener('click', nextPage);
   }
+  
 }
 
 // загрузка происходит в DOMContentLoaded

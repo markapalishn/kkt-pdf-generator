@@ -54,23 +54,6 @@
 
             <fieldset>
               <legend>1. Сведения о заявителе</legend>
-              <div class="field">
-                <label>Тип заявителя</label>
-                <div class="radio-group">
-                  <label class="radio-label">
-                    <input type="radio" id="applicantType-ip" name="applicantType" value="ip" checked>
-                    <span class="radio-text">ИП</span>
-                  </label>
-                  <label class="radio-label">
-                    <input type="radio" id="applicantType-org" name="applicantType" value="org">
-                    <span class="radio-text">ЮЛ</span>
-                  </label>
-                </div>
-              </div>
-              <div class="field">
-                <label for="ogrn">ОГРН/ОГРНИП</label>
-                <input id="ogrn" name="ogrn" inputmode="numeric" pattern="^\d{13}$|^\d{15}$" maxlength="15" required placeholder="13 (ОГРН) или 15 (ОГРНИП) цифр" />
-              </div>
               <div class="field grid-2">
                 <div>
                   <label for="inn">ИНН</label>
@@ -81,6 +64,20 @@
                   <label for="kpp">КПП</label>
                   <input id="kpp" name="kpp" inputmode="numeric" pattern="^\d{9}$" maxlength="9" placeholder="9 цифр (для организаций)" />
                 </div>
+              </div>
+              <div class="field">
+                <label for="ogrn">ОГРН/ОГРНИП</label>
+                <input id="ogrn" name="ogrn" inputmode="numeric" pattern="^\d{13}$|^\d{15}$" maxlength="15" required placeholder="13 (ОГРН) или 15 (ОГРНИП) цифр" />
+              </div>
+              <div class="field">
+                <label for="applicantType">Тип заявителя</label>
+                <select id="applicantType" name="applicantType">
+                  <option value="">Выберите тип</option>
+                  <option value="ip">ИП</option>
+                  <option value="ooo">ООО</option>
+                  <option value="ao">АО</option>
+                  <option value="other">Другое</option>
+                </select>
               </div>
               <div class="field">
                 <label for="orgName">Наименование (ФИО для ИП)</label>
