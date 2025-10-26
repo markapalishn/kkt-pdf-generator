@@ -1736,6 +1736,8 @@ document.addEventListener('DOMContentLoaded', () => {
           kppInput.disabled = true;
           kppInput.value = '';
         }
+        // Очищаем КПП в превью
+        updateKppField('');
       } else {
         if (kppInput) {
           kppInput.disabled = false;
