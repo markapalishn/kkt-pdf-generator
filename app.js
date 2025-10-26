@@ -1041,6 +1041,10 @@ function updateOrgNameFields(orgNameValue, applicantType) {
       if (part.length === 40 && part[39] === ' ') {
         part = part.slice(0, 39);
       }
+      // Если первый символ пробел, удаляем его (кроме самой первой строки)
+      if (parts.length > 0 && part.length > 0 && part[0] === ' ') {
+        part = part.slice(1);
+      }
       parts.push(part);
     }
     
